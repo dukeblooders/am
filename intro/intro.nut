@@ -1,58 +1,81 @@
+//******************************************************************************
+// Modules
+//******************************************************************************
 fe.load_module("file");
 
+
+//******************************************************************************
+// User configuration
+//******************************************************************************
 class UserConfig
 {
     </ label="Play intro", help="Toggle playback of intro video when Attract-Mode starts", options="Yes,No", order=1 />
     play_intro = "Yes";
 }
 
-// Any signal will cause intro mode to exit
-function end_mode()
+
+//******************************************************************************
+// Settings
+//******************************************************************************
+local video_extension = ".mp4"
+local video_path = "../intro"
+
+
+//******************************************************************************
+// Variables
+//******************************************************************************
+local player = null
+
+
+//******************************************************************************
+// End
+//******************************************************************************
+function End()
 {
     fe.signal("select");
 }
 
+
+//******************************************************************************
+// Init
+//******************************************************************************
 local config = fe.get_config();
-local paths
-local player
 
 switch (config["play_intro"])
 {
     case "No":
-        return end_mode()
-        break
+        return End()
 		
     case "Yes":
     default:
-		
-		local pathlist = DirectoryListing("../intro").results
+		local pathList = DirectoryListing(video_path).results
 	
-		paths = []
-		for (local i=0; i<pathlist.len(); i++ )
-		{
-			local r = regexp(".mp4")
-			local t = r.capture(pathlist[i])
-			
-			if (t != null)
-				paths.push(pathlist[i])
-		}
+		local paths = []
+		foreach(path in pathList)
+			if (regexp(video_extension).capture(path) != null)
+				paths.push(path)
 
-		if (paths.len() == 0) end_mode()
+		if (paths.len() == 0) 
+		{
+			End()
+		}
 		else
 		{
 			local path = paths[rand() % paths.len()]
+
+			player = fe.add_image(path, 0, 0, fe.layout.width, fe.layout.height);
 		
-			player = fe.add_image(path, 0, 0, ScreenWidth, ScreenHeight);
-		
-			fe.add_ticks_callback("intro_tick")
+			fe.add_ticks_callback("TicksCallback")
 		}
         break;
 }
 
-function intro_tick(ttime)
+
+//******************************************************************************
+// Callbacks
+//******************************************************************************
+function TicksCallback(ttime)
 {
-    if (player.video_playing == false)
-        end_mode()
-	
-    return false
+    if (!player.video_playing)
+        End()
 }
